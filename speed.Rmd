@@ -1,0 +1,338 @@
+---
+title: "Untitled"
+output: html_document
+---
+```{r}
+library(dplyr)
+library(ggplot2)
+data = read.csv('/Users/jialew/Desktop//¸½¼þ1/LIME_files/6207229_Z2A8J6HQ.csv')
+da<-data
+a<-strptime(data$Trip.Completed.At,"%Y-%m-%d %H:%M:%S")
+b.1<-data$Trip.Started.At
+b<-strptime(b.1,"%Y-%m-%d %H:%M:%S")
+b<-as.Date(b)
+da$s.m<-as.numeric(format(b,"%m"))
+da$s.d<-as.numeric(format(b,"%d"))
+da$s.h<-as.numeric(format(b,"%H"))
+da$c.m<-as.numeric(format(a,"%m"))
+da$c.d<-as.numeric(format(a,"%d"))
+da$c.h<-as.numeric(format(a,"%H"))
+#list day of week
+da$dayofweek<-weekdays(a)
+#time diff
+da$completetime<-as.POSIXct(strptime(data$Trip.Completed.At,format="%Y-%m-%d %H:%M:%S"))
+da$starttime<-as.POSIXct(strptime(data$Trip.Started.At,format="%Y-%m-%d %H:%M:%S"))
+da$timediff<-difftime(da$completetime,da$starttime,units="secs")
+
+```
+```{r}
+
+
+
+#<10, mile>1, 10/5-10/26
+g<-da[which(da$Trip.Distance..Meters.>1609 & da$c.m==10 & da$c.d>4 & da$c.d<27 & da$s.h<10),]
+table(g$City.Name)
+
+
+#user usage increase in 2nd month
+#most used vehicle id
+carid.freq<-table(da$Vehicle.ID)
+
+
+length(da[which(da$c.m==10),"Rider.ID"])-length(da[which(da$c.m==9),"Rider.ID"])
+daa<-table(da$Vehicle.ID)
+max(daa)
+length(unique(da$Vehicle.ID)) #1855
+h<-da[which(da$c.m<=11 & da$c.d>4 & da$c.d<27 & da$s.h<10),]
+```
+
+1. How many users in Sep used it again in Oct
+```{r}
+#user in sep
+septuser<-da %>% filter(c.m==9)
+#user in oct
+octuser<-da %>% filter(c.m==10)
+
+#recurring user
+recur<-length(intersect(septuser,octuser))
+#proportion of them in Oct users
+print(recur)
+paste(round(recur/length(octuser)*100,3),"%", sep=" ")
+
+```
+
+2. What 1-hour period is the most active hour in terms of usage across all days
+```{r}
+daa<-da[,c(3:6,17:22)]
+daa2<-as.data.frame(daa %>% group_by(c.h) %>% summarise(tripshour=length(Trip.ID)))
+colnames(daa2)<-c("Hour","TripsCompleted")
+daa2 
+str(daa2)
+daa2$Hour<-as.factor(daa2$Hour)
+ggplot(daa2, aes(x = daa2$Hour, y = daa2$TripsCompleted)) +
+  geom_bar(fill = "#0073C2FF", stat = "identity") +
+  geom_text(aes(label = daa2$TripsCompleted), vjust = -0.3) + labs(x="Hour") + labs(y="Number of Trips")
+
+
+```
+
+3. What 1-hour period is the most active hour for each of (Mon/Tue/Wed...Sun)
+```{r}
+da$Trip.Completed.At<-as.Date(da$Trip.Completed.At)
+
+da2<-as.data.frame(da %>% group_by(dayofweek,c.h) %>% summarise(tripshour=length(Trip.ID)))
+day_activehour<-da2 %>% group_by(dayofweek) %>% summarise(Trips=max(tripshour))
+a1<-subset(da2,tripshour==25 & dayofweek=="Friday") #19
+a2<-subset(da2,tripshour==39 & dayofweek=="Monday") #0
+a3<-subset(da2,tripshour==45 & dayofweek=="Saturday") #23
+a4<-subset(da2,tripshour==38 & dayofweek=="Sunday") #22
+a5<-subset(da2,tripshour==26 & dayofweek=="Thursday") #1
+a6<-subset(da2,tripshour==24 & dayofweek=="Tuesday") #22
+a7<-subset(da2,tripshour==22 & dayofweek=="Wednesday") #20
+activehour_day<-rbind(a2,a6,a7,a5,a1,a3,a4)
+colnames(activehour_day)<-c("Day of Week", "Hour", "Trips")
+
+```
+
+4. What 1-hour period is the most active in weekdays
+```{r}
+da3<-as.data.frame(da %>% filter(dayofweek != "Saturday" &dayofweek != "Sunday") %>% group_by(c.h) %>% summarise(tripshour=length(Trip.ID)))
+da3
+da4<-as.data.frame(da %>% filter(dayofweek == "Saturday" | dayofweek == "Sunday") %>% group_by(c.h) %>% summarise(tripshour=length(Trip.ID)))
+
+#0,1
+da3$tripshour<-as.numeric(da3$tripshour)
+ggplot(da3, aes(x = da3$c.h, y = da3$tripshour)) +
+  geom_bar(fill = "#0073C2FF", stat = "identity") +
+  geom_text(aes(label = da3$tripshour), vjust = -0.3) + labs(x="Weekday Hour") + labs(y="Number of Trips")
+```
+
+5. Which city has the longest average trip length, which one has the lowest
+```{r}
+da %>% group_by(City.Name) %>% summarise(average_distance=mean(Trip.Distance..Meters.))
+```
+
+6. Which city generates the most average ride revenue over weekends 
+```{r}
+str(da$dayofweek)
+da %>% filter(dayofweek == "Saturday"|dayofweek == "Sunday") %>% group_by(City.Name) %>% summarize(avg_rev_weekends=round(sum(Trip.Amount.Paid..Cents.)/length(Trip.ID)/100,2))
+result7<-as.data.frame(da %>% filter(dayofweek == "Saturday"|dayofweek == "Sunday") %>% group_by(City.Name) %>% summarize(avg_per.ride.rev_weekends=round(sum(Trip.Amount.Paid..Cents.)/length(Trip.ID)/100,2)))
+result7$avg_per.ride.rev_weekends<-paste("$",result7$avg_per.ride.rev_weekends, sep=" ")
+result7
+```
+
+7. Which city sees the most ride growth in Oct comparing to Sep? Revenue growth?
+```{r}
+#ridegrowth
+octtrips<-as.data.frame(da %>% filter(c.m==10) %>% group_by(City.Name) %>% summarise(totaltrips=length(Trip.ID)))
+septrips<-as.data.frame(da %>% filter(c.m==9) %>% group_by(City.Name) %>% summarise(totaltrips=length(Trip.ID)))
+result8<-as.data.frame(octtrips[,2]-septrips[,2])
+rownames(result8)<-unique(unlist(da$City.Name))
+colnames(result8)<-c("Sept/Oct Rider Growth")
+result8$`Sept/Oct Rider Growth`<-paste(round((result8$`Sept/Oct Rider Growth`/septrips[,2])*100,2),"%",sep=" ")
+result8
+
+#revgrowth
+View(da)
+names(da)
+octrev<-as.data.frame(da %>% filter(c.m==10) %>% group_by(City.Name) %>% summarise(totalrev=sum(Trip.Amount.Paid..Cents.)))
+seprev<-as.data.frame(da %>% filter(c.m==9) %>% group_by(City.Name) %>% summarise(totalrev=sum(Trip.Amount.Paid..Cents.)))
+results8.1<-as.data.frame(octrev[,2]-seprev[,2])
+rownames(results8.1)<-unique(unlist(da$City.Name))
+colnames(results8.1)<-c("Sept/Oct Revenue Growth")
+results8.1$`Sept/Oct Revenue Growth`<-paste(round((results8.1$`Sept/Oct Revenue Growth`
+                                                     /seprev[,2])*100,2),"%",sep=" ")
+results8.1
+```
+
+
+
+8 If we categorize trips as (short trips) < 1000m, mid-trips 1000 <= < 2500, long-trips >= 2500 Make a table for number of rides, avg. distance, avg. rating, avg. cost, avg. ride time for these three cat.
+    
+```{r}
+da$timediff<-as.numeric(da$timediff)
+short<-subset(da,da$Trip.Distance..Meters.<1000)
+mid<-subset(da,da$Trip.Distance..Meters.<2500&da$Trip.Distance..Meters.>=1000)
+long<-subset(da,da$Trip.Distance..Meters.>=2500)
+#avg cost per min, avg cost per 1000m
+index<-which(da$Trip.Amount.Total.Cost..Cents.==0)
+da$Trip.Amount.Total.Cost..Cents.[index]<-NA
+index2<-which(da$Trip.Distance..Meters.==0)
+da$Trip.Amount.Total.Cost..Cents.[index2]<-NA
+
+a1<-c(length(short$Trip.ID),
+      mean(short$Trip.Distance..Meters.),
+      mean(na.omit(short$Trip.Rating)),
+      round(mean(na.omit(short$Trip.Amount.Total.Cost..Cents.))/100,2),
+      mean(short$timediff), 
+      mean(na.omit(short$Trip.Amount.Total.Cost..Cents.)/(short$timediff/60)), mean(mean(na.omit(short$Trip.Amount.Total.Cost..Cents.))/(mean((na.omit(short$Trip.Distance..Meters.)))/1000)))
+
+a2<-c(length(mid$Trip.ID),mean(mid$Trip.Distance..Meters.),mean(na.omit(mid$Trip.Rating)),mean(mid$Trip.Amount.Total.Cost..Cents.),mean(mid$timediff), mean(mid$Trip.Amount.Total.Cost..Cents./(mid$timediff/60)), mean(mid$Trip.Amount.Total.Cost..Cents./(mid$Trip.Distance..Meters./1000)))
+
+a3<-c(length(long$Trip.ID),mean(long$Trip.Distance..Meters.),mean(na.omit(long$Trip.Rating)),mean(long$Trip.Amount.Total.Cost..Cents.),mean(long$timediff), mean(long$Trip.Amount.Total.Cost..Cents./(long$timediff/60)), mean(long$Trip.Amount.Total.Cost..Cents./(long$Trip.Distance..Meters./1000)))
+
+tbl<-as.data.frame(rbind(a1,a2,a3))
+#name
+rownames(tbl)<-c("short","mid","long")
+colnames(tbl)<-c("#rides","avg dist","avg rating","avg cost $","avg ridetime (min)","avg cost $ per min","avg cost $ per 1km")
+
+tbl$`avg cost $`<-tbl$`avg cost $`/100
+tbl$`avg cost $ per min`<-tbl$`avg cost $ per min`/100
+tbl$`avg cost $ per 1km`<-tbl$`avg cost $ per 1km`/100
+tbl$`avg ridetime (min)`<-tbl$`avg ridetime (min)`/60
+tbl<-round(tbl,2)
+tbl
+```
+
+
+
+#dataset 2
+S-Ratio = [non-operational] / [operational + non-operational]		
+1. Breaking down by model, what's the s-ratio across the 4 models
+
+```{r}
+library("readxl")
+d2 = read_excel('/Users/jialew/Desktop/¸½¼þ1/LIME_files/6207229_M9XOPWKN.xlsx',sheet=3,col_names = TRUE, col_types = NULL, na = "")
+d3=read_excel('/Users/jialew/Desktop/¸½¼þ1/LIME_files/6207229_M9XOPWKN.xlsx',sheet=2,col_names = TRUE, col_types = NULL, na = "")
+View(d2)
+d3<-d3[-c(1,2,3,4,5,6,7),]
+colnames(d3)<-c("Market","Region")
+#merge
+data.b<-merge(d2,d3, by.x="MARKET",by.y="Market",all.x=TRUE)
+
+data.b1<-as.data.frame(data.b %>% group_by(MODEL) %>% summarise(sratio=round(100*(sum(SICK)/(sum(SICK)+sum(OPERATIONAL))),2)))
+colnames(data.b1)<-c("Model","S Ratio (%)")
+
+
+```
+
+2. Breaking down by region, wht'as the s-ratio across the 4 regions
+```{r}
+data.b2<-as.data.frame(data.b %>% group_by(Region) %>% summarise(sratio=round(100*(sum(SICK)/(sum(SICK)+sum(OPERATIONAL))),2)))
+colnames(data.b2)<-c("Region","S Ratio (%)")
+
+```
+
+3. Breaking down by model x region, create a s-ratio table with one axis is model, and the other is region
+```{r}
+data.b1<-data.b %>% group_by(MODEL,Region) %>% summarise(sratio=round(100*(sum(SICK)/(sum(SICK)+sum(OPERATIONAL))),2))
+data.b1$sratio<-paste(data.b1$sratio,"%",sep=" ")
+datadf<-as.data.frame(matrix(data.b1$sratio,byrow=T,nrow=4,ncol=4))
+col_names<-unique(unlist(data.b1$Region))
+row_names<-unique(unlist(data.b1$MODEL))
+colnames(datadf)<-col_names
+rownames(datadf)<-row_names
+print(datadf)
+
+
+```
+
+4. plot revnue v.s. total vehicles for the eligible data points, for each of the 4 models, do you see any correlations
+```{r}
+summary(data.b)
+data.b_nona<-na.omit(data.b)
+data.b_nona$vehicles<-data.b_nona$OPERATIONAL+data.b_nona$SICK
+
+data.b_nona %>% group_by(MODEL) %>% summarise(avgrev=mean(REVENUE))
+rev_vehicle = data.b_nona %>% group_by(MODEL)
+
+library(ggplot2)
+qplot(vehicles, REVENUE, data=rev_vehicle,
+ geom="point", stat = "identity", color = MODEL, main= "Revenue by Vehicles")
+
+#bf
+bf<-data.b_nona %>% filter(MODEL=="BF")
+#ez
+ez<-data.b_nona %>% filter(MODEL=="EZ")
+#sk
+sk<-data.b_nona %>% filter(MODEL=="SK")
+#sn
+sn<-data.b_nona %>% filter(MODEL=="SN")
+
+par(mfrow=c(1,4))
+ggplot(data = bf, aes(x = vehicles, y = REVENUE)) + 
+  geom_point(color='blue') +
+  geom_smooth(method = "lm", se = FALSE) + labs(x="Model BF: Vehicles")
+ggplot(data = ez, aes(x = vehicles, y = REVENUE)) + 
+  geom_point(color='blue') +
+  geom_smooth(method = "lm", se = FALSE)+ labs(x="Model EZ: Vehicles")
+ggplot(data = sk, aes(x = vehicles, y = REVENUE)) + 
+  geom_point(color='blue') +
+  geom_smooth(method = "lm", se = FALSE) + labs(x="Model SK: Vehicles")
+ggplot(data = sn, aes(x = vehicles, y = REVENUE)) + 
+  geom_point(color='blue') +
+  geom_smooth(method = "lm", se = FALSE)+ labs(x="Model SN: Vehicles")
+
+
+```
+
+5. Figure out per region, which of the regions saw an increase of per vehicle revnue, and by what percentage
+```{r}
+data.b_nona$DATE<-as.Date(data.b_nona$DATE)
+data.b_nona$month<-format(data.b_nona$DATE,"%m")
+
+index3<-which(data.b_nona$REVENUE==0)
+data.b_nona$REVENUE[index3]<-NA
+index4<-which(data.b_nona$vehicles==0)
+data.b_nona$vehicles[index4]<-NA
+data.b_nona<-na.omit(data.b_nona)
+
+###total rev
+total.rev<-as.data.frame(data.b_nona %>% group_by(Region,month) %>% summarise(totalrev=mean(na.omit(REVENUE))))
+TotalRevenuePerRegion<-
+as.data.frame(round((total.rev$totalrev[seq(0,8,2)]-total.rev$totalrev[seq(1,8,2)])/total.rev$totalrev[seq(1,8,2)],4)*100)
+TotalRevenuePerRegion<-as.data.frame(paste(TotalRevenuePerRegion$`round((total.rev$totalrev[seq(0, 8, 2)] - total.rev$totalrev[seq(1, 8, 2)])/total.rev$totalrev[seq(1, 8, 2)], 4) * 100`,"%",sep=" "))
+
+rownames(TotalRevenuePerRegion)<-c("Region 1", "Region 2", "Region 3", "Region 4")
+colnames(TotalRevenuePerRegion)<-c("%Increase in total revenuee")
+
+#####rev per car
+rev.per.car.region<-as.data.frame(data.b_nona %>% group_by(Region,month) %>% summarise(rev.per.vehicle=mean(REVENUE/vehicles)))
+                                       
+#rownames(RevenuePerVehicleGrowth)<-c("Region 1", "Region 2", "Region 3", "Region 4")
+#colnames(RevenuePerVehicleGrowth)<-c("Growth from Jun to Jul")
+
+RevenuePerRegion<-as.data.frame(round((rev.per.car.region$rev.per.vehicle[seq(0,8,2)]-rev.per.car.region$rev.per.vehicle[seq(1,8,2)])/rev.per.car.region$rev.per.vehicle[seq(1,8,2)],4)*100)
+
+RevenuePerRegion<-as.data.frame((paste(RevenuePerRegion$`round((rev.per.car.region$rev.per.vehicle[seq(0, 8, 2)] - rev.per.car.region$rev.per.vehicle[seq(1, 8, 2)])/rev.per.car.region$rev.per.vehicle[seq(1, 8, 2)], 4) * 100`, "%", sep="")))
+     
+rownames(RevenuePerRegion)<-c("Region 1", "Region 2", "Region 3", "Region 4")
+colnames(RevenuePerRegion)<-c("%Increase in revenue per vehicle")
+
+```
+
+6. Try to figure out why, for question 5 (what are the numbers that's changed for these regions? Models? S-ratio? Total rides? etc.)
+```{r}
+#changein s ratio
+#jul
+data.b2<-data.b_nona %>% filter(month=="07")%>% group_by(Region) %>% summarise(sratio=round(sum(SICK)/(sum(SICK)+sum(OPERATIONAL)),4))
+
+#Jun
+data.b3<-data.b_nona %>% filter(month=="06")%>% group_by(Region) %>% summarise(sratio=round(sum(SICK)/(sum(SICK)+sum(OPERATIONAL)),4))
+
+#%change from jun to jul
+SratioChange<-as.data.frame(round((data.b2$sratio-data.b3$sratio)/data.b3$sratio,4)*100)
+SratioChange<-as.data.frame((paste(SratioChange$`round((data.b2$sratio - data.b3$sratio)/data.b3$sratio, 4) * 100`, "%", sep="")))
+rownames(SratioChange)<-c("Region 1", "Region 2", "Region 3", "Region 4")
+colnames(SratioChange)<-c("% Change in S-Ratio from Jun to Jul")
+
+```
+
+```{r}
+#change in vehicle numbers
+#jul
+data.bb2<-data.b_nona %>% filter(month=="07")%>% group_by(Region) %>% summarise(num_vehicles=mean(vehicles))
+
+#jun
+data.bb3<-data.b_nona %>% filter(month=="06")%>% group_by(Region) %>% summarise(num_vehicles=mean(vehicles))
+
+#%change from jun to jul
+num_vehicles<-as.data.frame(round((data.bb2$num_vehicles-data.bb3$num_vehicles)/data.bb3$num_vehicles,4)*100)
+num_vehicles<-as.data.frame(paste(num_vehicles$`round((data.bb2$num_vehicles - data.bb3$num_vehicles)/data.bb3$num_vehicles, 4) * 100`, "%", sep=""))
+rownames(num_vehicles)<-c("Region 1", "Region 2", "Region 3", "Region 4")
+colnames(num_vehicles)<-c("% Change in Avg Number of Vehicles from Jun to Jul")
+
+finaltable<-cbind(TotalRevenuePerRegion,RevenuePerRegion,SratioChange,num_vehicles)
+print(finaltable)
+```
+
