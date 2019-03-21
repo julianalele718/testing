@@ -1,0 +1,81 @@
+---
+title: "Regexp/Date"
+output: html_document
+---
+#grepl
+```{r}
+text<-"Hi there, do you know who you are voting for?"
+grepl("voting",text)
+
+v<-c("a","b","c","d","d")
+grepl("b",v)
+```
+
+#grep
+```{r}
+grep("b",v)
+grep("d",v)
+
+
+```
+
+#DATE
+```{r}
+Sys.Date()
+today<-Sys.Date()
+class(today)
+c<-"1990-01-01"
+c<-as.Date(c)
+class(c)
+
+mydate<-as.Date("Nov-03-90",format="%b-%d-%y")
+# %d day of month
+# %m month decimal
+# %b month abbrev
+# %B month full
+# %y 2 digit
+# %Y 4 digit
+
+# convert date
+df <- data.frame(date = datetxt,
+  year = as.numeric(format(datetxt, format = "%Y")),
+  month = as.numeric(format(datetxt, format = "%m")),
+  day = as.numeric(format(datetxt, format = "%d")),
+  hour= as.numeric(format(datetxt, format = "%H")),
+  min = as.numeric(format(datetxt, format = "%M")),
+  sec = as.numeric(format(datetxt, format = "%S"))
+  )
+
+da$START<-as.POSIXct(strptime(data$Trip.Completed.At,format="%Y-%m-%d %H:%M:%S"))
+
+da$COMP<-as.POSIXct(strptime(data$Trip.Started.At,format="%Y-%m-%d %H:%M:%S"))
+
+da$timediff<-difftime(da$START,da$COMP,units="secs")
+#"auto", "secs", "mins", "hours", "days", "weeks"
+
+
+
+```
+#POSIXct convert strings to time format
+convert time stamp informaiton, helps you fill out
+#strptime, same as posixct
+usually use this
+date-time conversion fucntions to and from character
+```{r}
+help(strptime)
+#strptime(x, "%m/%d/%y %H:%M:%S")
+```
+
+
+arrange is filter with order
+
+arrange(flights,year,month,day,air_time)
+rename(flights,airline_carrier=carrier)
+distinct(select(flights,carriers))
+mutate #calculation
+transmute #only new colum 
+sample_n() 
+sample_frac(flights,0.1) #get 10% back
+
+
+
