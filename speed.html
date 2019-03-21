@@ -399,7 +399,7 @@ result8</code></pre>
 ## Northville              266.67 %
 ## Westville               246.67 %</code></pre>
 <pre class="r"><code>#revgrowth
-View(da)
+
 names(da)</code></pre>
 <pre><code>##  [1] &quot;Country.Code&quot;                   &quot;Timezone&quot;                      
 ##  [3] &quot;City.Name&quot;                      &quot;Trip.ID&quot;                       
@@ -474,7 +474,7 @@ tbl</code></pre>
 <pre class="r"><code>library(&quot;readxl&quot;)
 d2 = read_excel('/Users/jialew/Desktop/¸½¼þ1/LIME_files/6207229_M9XOPWKN.xlsx',sheet=3,col_names = TRUE, col_types = NULL, na = &quot;&quot;)
 d3=read_excel('/Users/jialew/Desktop/¸½¼þ1/LIME_files/6207229_M9XOPWKN.xlsx',sheet=2,col_names = TRUE, col_types = NULL, na = &quot;&quot;)
-View(d2)
+
 d3&lt;-d3[-c(1,2,3,4,5,6,7),]
 colnames(d3)&lt;-c(&quot;Market&quot;,&quot;Region&quot;)
 #merge

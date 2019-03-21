@@ -133,7 +133,7 @@ result8$`Sept/Oct Rider Growth`<-paste(round((result8$`Sept/Oct Rider Growth`/se
 result8
 
 #revgrowth
-View(da)
+
 names(da)
 octrev<-as.data.frame(da %>% filter(c.m==10) %>% group_by(City.Name) %>% summarise(totalrev=sum(Trip.Amount.Paid..Cents.)))
 seprev<-as.data.frame(da %>% filter(c.m==9) %>% group_by(City.Name) %>% summarise(totalrev=sum(Trip.Amount.Paid..Cents.)))
@@ -194,7 +194,7 @@ S-Ratio = [non-operational] / [operational + non-operational]
 library("readxl")
 d2 = read_excel('/Users/jialew/Desktop/¸½¼þ1/LIME_files/6207229_M9XOPWKN.xlsx',sheet=3,col_names = TRUE, col_types = NULL, na = "")
 d3=read_excel('/Users/jialew/Desktop/¸½¼þ1/LIME_files/6207229_M9XOPWKN.xlsx',sheet=2,col_names = TRUE, col_types = NULL, na = "")
-View(d2)
+
 d3<-d3[-c(1,2,3,4,5,6,7),]
 colnames(d3)<-c("Market","Region")
 #merge
